@@ -17,7 +17,6 @@ let asset = null;
 let assetType = "cb";
 let assetID = "0000010010";
 
-let gameInfo = {};
 let assetInfo = {};
 
 let backgroundColor = [255, 255, 255];
@@ -54,7 +53,6 @@ async function Init() {
     shader = spine.webgl.Shader.newColoredTextured(WebGL);
 
     // 애셋 불러오기
-    gameInfo = (await axios.get(dataURL + "/game.json")).data;
     assetInfo = (await axios.get(dataURL + "/asset.json")).data;
 
     // 애셋 데이터 가공
@@ -451,7 +449,6 @@ async function SelectDirectory() {
 function SetupIdolList() {
     const idolList = $("#idolList")[0];
     idolList.disabled = false
-    //const typeTextList = gameInfo.type;
 
     idolList.innerHTML = "";
 
