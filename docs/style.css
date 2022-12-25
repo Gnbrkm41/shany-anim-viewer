@@ -8,13 +8,21 @@ html {
     background-color: #000000;
     height: 100%;
 }
+
+#aside {
+    float: left;
+    width: 300px;
+    position: absolute;
+    z-index: 1;
+}
+
 canvas {
     position: absolute;
     width: 100%;
     height: 100%;
 }
 div {
-    position: fixed;
+    /*position: absolute;*/
     width: 100%;
     background-color: #00000066;
     padding-bottom: 6px;
@@ -30,4 +38,18 @@ select, input, button {
 }
 select {
     min-width: 100px;
+}
+
+#idolList option {
+    display: block;
+    float: left;
+    margin-right: 5%;
+    width: 20%;
+}
+
+#animationList option {
+    display: block;
+    float: left;
+    margin-right: 30%;
+    width: 20%;
 }

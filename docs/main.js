@@ -20,9 +20,9 @@ let assetID = "0000010010";
 let gameInfo = {};
 let assetInfo = {};
 
-let backgroundColor = [0, 0, 0];
+let backgroundColor = [255, 255, 255];
 
-const dataURL = "https://shinycolors.info/utils/shany-anim-viewer/docs";
+const dataURL = ".";
 
 const $ = document.querySelectorAll.bind(document);
 
@@ -80,9 +80,6 @@ async function Init() {
     colorPicker.onchange = (event) => {
         backgroundColor = HexToRgb(event.target.value);
     };
-
-    SetupTypeList();
-    SetupIdolList();
 
     LoadAsset();
 }
@@ -182,7 +179,7 @@ function LoadAsset() {
 function Load() {
     // Wait until the AssetManager has loaded all resources, then load the skeletons.
     if (assetManager.isLoadingComplete()) {
-        asset = LoadSpine("wait", true);
+        asset = LoadSpine("", true);
 
         SetupAnimationList();
         SetupSkinList();
@@ -232,11 +229,14 @@ function LoadSpine(initialAnimation, premultipliedAlpha) {
     // var jumpEntry = animationState.addAnimation(0, "jump", false, 3);
     // animationState.addAnimation(0, "run", true, 0);
 
-    try {
-        animationState.setAnimation(0, initialAnimation, true);
-    } catch (e) {
-        animationState.setAnimation(0, "talk_wait", true); // 하즈키 SD 관련 수정
+    if (initialAnimation !== "") {
+        try {
+            animationState.setAnimation(0, initialAnimation, true);
+        } catch (e) {
+            animationState.setAnimation(0, "talk_wait", true); // 하즈키 SD 관련 수정
+        }
     }
+
 
     if (debug) {
         animationState.addListener({
@@ -284,65 +284,12 @@ function CalculateBounds(skeleton) {
     return { offset: offset, size: size };
 }
 
-function SetupTypeList() {
-    const typeList = $("#typeList")[0];
-    const typeTextList = gameInfo.type;
-
-    typeList.innerHTML = "";
-
-    for (const type of Object.keys(assetInfo)) {
-        const option = document.createElement("option");
-        const typeText = _.find(typeTextList, { id: type }) || { name: "타입" };
-        option.textContent = typeText.name;
-        option.value = type;
-        option.selected = type === assetType;
-        typeList.appendChild(option);
-    }
-
-    typeList.onchange = () => {
-        assetType = typeList.value;
-        SetupIdolList();
-        ClearDragStatus();
-        requestAnimationFrame(LoadAsset);
-    };
-
-    const firstNode = $("#typeList option")[0];
-    firstNode.selected = true;
-    assetType = firstNode.value;
-}
-
-function SetupIdolList() {
-    const idolList = $("#idolList")[0];
-    const idolTextList = gameInfo.idol;
-
-    idolList.innerHTML = "";
-
-    for (const asset of assetInfo[assetType]) {
-        const option = document.createElement("option");
-        const idolText = _.find(idolTextList, { id: asset.idol_id }) || {
-            name: "아이돌"
-        };
-        option.textContent = idolText.name.split(" ").pop();
-        option.value = asset.value;
-        idolList.appendChild(option);
-    }
-
-    idolList.onchange = () => {
-        assetID = idolList.value;
-        ClearDragStatus();
-        requestAnimationFrame(LoadAsset);
-    };
-
-    const firstNode = $("#idolList option")[0];
-    firstNode.selected = true;
-    assetID = firstNode.value;
-}
 
 function SetupAnimationList() {
     const animationList = $("#animationList")[0];
     const skeleton = asset.skeleton;
     const state = asset.state;
-    const activeAnimation = state.tracks[0].animation.name;
+    const activeAnimation = state.tracks[0] ? state.tracks[0].animation.name : "";
 
     animationList.innerHTML = "";
 
@@ -354,6 +301,7 @@ function SetupAnimationList() {
         option.selected = name === activeAnimation;
         animationList.appendChild(option);
     }
+    // animationList.size = $("#animationList option").length;
 
     animationList.onchange = () => {
         const state = asset.state;
@@ -401,6 +349,7 @@ function SetupSkinList() {
         option.selected = name === activeSkin;
         skinList.appendChild(option);
     }
+    skinList.size = $("#skinList option").length;
 
     skinList.onchange = () => {
         const skeleton = asset.skeleton;
@@ -471,6 +420,67 @@ function Resize() {
 
     mvp.ortho2d(centerX - width / 2, centerY - height / 2, width, height);
     WebGL.viewport(0, 0, canvas.width, canvas.height);
+}
+
+let spines = {}
+async function SelectDirectory() {
+    let directoryHandle = await window.showDirectoryPicker();
+    for await (const [name, handle] of directoryHandle.entries()) {
+        if (handle.kind === "directory") {
+            var json = null, atlas = null, spriteSheet = null;
+            for await ([fileName, fileHandle] of handle.entries()) {
+                if (fileName.endsWith("png") || fileName.endsWith("webp")) {
+                    spriteSheet = fileHandle
+                }
+                else if (fileName.endsWith("json")) {
+                    json = fileHandle
+                }
+                else if (fileName.endsWith("atlas")) {
+                    atlas = fileHandle
+                }
+            }
+            if (!(json === null || atlas === null || spriteSheet === null)) {
+                spines[name] = {"texture": spriteSheet, "json": json, "atlas": atlas}
+            }
+        }
+    }
+
+    SetupIdolList()
+}
+
+function SetupIdolList() {
+    const idolList = $("#idolList")[0];
+    idolList.disabled = false
+    //const typeTextList = gameInfo.type;
+
+    idolList.innerHTML = "";
+
+    const defaultOption = document.createElement("option");
+    defaultOption.value = "";
+    defaultOption.textContent = "Please select";
+    defaultOption.disabled = true;
+    defaultOption.selected = true;
+    idolList.appendChild(defaultOption);
+
+    for (const key of Object.keys(spines)) {
+        const option = document.createElement("option");
+        option.value = key;
+        option.textContent = key;
+        idolList.appendChild(option);
+    }
+
+    idolList.onchange = async () => {
+        selected = spines[idolList.selectedOptions[0].textContent]
+
+        if (selected === undefined) {
+            return;
+        }
+
+        pathAtlas = window.URL.createObjectURL(await selected.atlas.getFile());
+        pathJSON = window.URL.createObjectURL(await selected.json.getFile());
+        pathTexture = window.URL.createObjectURL(await selected.texture.getFile());
+        requestAnimationFrame(LoadAsset);
+    };
 }
 
 Init();

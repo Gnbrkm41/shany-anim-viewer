@@ -13,19 +13,25 @@
     </head>
     <body ondrop="DropHandler(event);" ondragover="DragOverHandler(event);">
         <canvas id="canvas"></canvas>
-        <div>
-            <span>Type:</span>
-            <select id="typeList"></select>
+        <div id="aside">
+            <button onclick="SelectDirectory();">Select Directory</button>
+            <br>
             <span>Idol:</span>
-            <select id="idolList"></select>
+            <select id="idolList" disabled size="1">
+                <option value="" selected disabled>Select directory</option>
+            </select>
+            <br>
             <span>Animation:</span>
-            <select id="animationList"></select>
+            <select id="animationList" size="15"></select>
+            <br>
             <span>Skin:</span>
             <select id="skinList"></select>
+            <br>
             <span>Background Color:</span>
             <input id="color-picker" type="color" />
             <button onclick="ClearTrack();">Reset Animation</button>
         </div>
+
         <script src="main.js"></script>
     </body>
 </html>
