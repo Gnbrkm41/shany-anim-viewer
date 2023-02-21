@@ -73,6 +73,12 @@ async function Init() {
         });
     }
 
+    // 배경 색상 선택기
+    const colorPicker = document.querySelector("#color-picker");
+    colorPicker.onchange = (event) => {
+        document.body.style.backgroundColor = event.target.value;
+    };
+    
     LoadAsset();
 }
 
@@ -432,8 +438,8 @@ function Resize() {
 
     let isSd = bounds.size.x < 400 && bounds.size.y < 600;
     if (isSd) {
-        canvas.width = 400
-        canvas.height = 600
+        canvas.width = 300
+        canvas.height = 450
     } else {
         canvas.width = bounds.size.x + 40
         canvas.height = bounds.size.y + 40
@@ -444,12 +450,11 @@ function Resize() {
     var centerY = bounds.offset.y + bounds.size.y / 2;
 
     if (isSd) {
-        centerY += 40
+        centerY *= 1.25
     }
-    // var scaleX = bounds.size.x / canvas.width;
-    // var scaleY = bounds.size.y / canvas.height;
-    var scale = /* Math.max(scaleX, scaleY) * 1.2;
-    if (scale < 1)*/ scale = 1;
+    var scaleX = bounds.size.x / canvas.width;
+    var scaleY = bounds.size.y / canvas.height;
+    var scale = isSd ? Math.max(scaleX, scaleY) * 1.2 : 1;
     var width = canvas.width * scale;
     var height = canvas.height * scale;
 
