@@ -18,21 +18,21 @@ let assetType = "cb";
 let assetID = "0000010010";
 
 let assetInfo = {};
+let isRecording = false;
+let frameRate = 30;
 
-let backgroundColor = [255, 255, 255];
-
+let recordFrames = [];
+let completePromiseHandler;
 const dataURL = ".";
 
 const $ = document.querySelectorAll.bind(document);
 
 async function Init() {
-    // Setup canvas and WebGL context. We pass alpha: false to canvas.getContext() so we don't use premultiplied alpha when
-    // loading textures. That is handled separately by PolygonBatcher.
     canvas = $("canvas")[0];
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    canvas.width = 900 //window.innerWidth;
+    canvas.height = 1200 //window.innerHeight;
 
-    const config = { alpha: false };
+    const config = { alpha: true };
     WebGL =
         canvas.getContext("webgl", config) ||
         canvas.getContext("experimental-webgl", config);
@@ -72,12 +72,6 @@ async function Init() {
             };
         });
     }
-
-    // 배경 색상 선택기
-    const colorPicker = document.querySelector("#color-picker");
-    colorPicker.onchange = (event) => {
-        backgroundColor = HexToRgb(event.target.value);
-    };
 
     LoadAsset();
 }
@@ -170,18 +164,35 @@ function LoadAsset() {
     assetManager.loadText(pathJSON || path + ".json");
     assetManager.loadText(pathAtlas || path + ".atlas");
     assetManager.loadTexture(pathTexture || path + ".png");
-
     requestAnimationFrame(Load);
+}
+
+async function LoadAssetAndStartRecording() {
+    // Stop rendering.
+    asset = null;
+    assetManager.removeAll();
+
+    const path = [dataURL, "assets", assetType, assetID, "data"].join("/");
+    assetManager.loadText(pathJSON || path + ".json");
+    assetManager.loadText(pathAtlas || path + ".atlas");
+    assetManager.loadTexture(pathTexture || path + ".png");
+
+    isRecording = true;
+    recordFrames = [];
+    requestAnimationFrame(Load);
+
+    let promise = new Promise((success) => completePromiseHandler = success);
+    return promise;
 }
 
 function Load() {
     // Wait until the AssetManager has loaded all resources, then load the skeletons.
     if (assetManager.isLoadingComplete()) {
-        asset = LoadSpine("", true);
-
-        SetupAnimationList();
-        SetupSkinList();
-
+        asset = LoadSpine(isRecording ? ($("#animationList")[0].value ?? "wait") : "", true);
+        if (!isRecording) {
+            SetupAnimationList();
+            SetupSkinList();
+        }
         requestAnimationFrame(Render);
     } else {
         requestAnimationFrame(Load);
@@ -229,9 +240,9 @@ function LoadSpine(initialAnimation, premultipliedAlpha) {
 
     if (initialAnimation !== "") {
         try {
-            animationState.setAnimation(0, initialAnimation, true);
+            animationState.setAnimation(0, initialAnimation, !isRecording);
         } catch (e) {
-            animationState.setAnimation(0, "talk_wait", true); // 하즈키 SD 관련 수정
+            animationState.setAnimation(0, "talk_wait", !isRecording); // 하즈키 SD 관련 수정
         }
     }
 
@@ -305,6 +316,8 @@ function SetupAnimationList() {
         const state = asset.state;
         const skeleton = asset.skeleton;
         const animationName = animationList.value;
+        if (!animationName) return;
+
         skeleton.setToSetupPose();
 
         let trackIndex = 0;
@@ -318,6 +331,8 @@ function SetupAnimationList() {
             trackIndex = 3;
         } else if (animationName.startsWith("arm")) {
             isLoop = false;
+        } else if (animationName == "on" || animationName == "off") {
+            trackIndex = 4;
         }
 
         state.setAnimation(trackIndex, animationName, isLoop);
@@ -326,9 +341,10 @@ function SetupAnimationList() {
 
 function ClearTrack() {
     if (asset) {
-        asset.state.clearTrack(1);
-        asset.state.clearTrack(2);
-        asset.state.clearTrack(3);
+        for (let i = 1; i < 5; i++) {
+            asset.state.clearTrack(i);
+            asset.state.setEmptyAnimation(i);
+        }
     }
 }
 
@@ -359,11 +375,11 @@ function SetupSkinList() {
 
 function Render() {
     var now = Date.now() / 1000;
-    var delta = now - lastFrameTime;
+    var delta = isRecording ? 1.0 / frameRate : now - lastFrameTime;
     lastFrameTime = now;
 
     // 배경 그리기
-    WebGL.clearColor(...backgroundColor, 1);
+    WebGL.clearColor(0, 0, 0, 0);
     WebGL.clear(WebGL.COLOR_BUFFER_BIT);
 
     // 애셋이 없으면 여기서 마무리
@@ -394,6 +410,14 @@ function Render() {
     batcher.end();
     shader.unbind();
 
+    if (isRecording) {       
+        let frame = canvas.toBlob((blob) => recordFrames.push(blob), "image/webp", 0.8)
+
+        if (state.tracks[0].isComplete()) {
+            isRecording = false;
+            completePromiseHandler && completePromiseHandler()
+        }
+    }
     requestAnimationFrame(Render);
 }
 
@@ -401,18 +425,31 @@ function Resize() {
     var w = canvas.clientWidth;
     var h = canvas.clientHeight;
     var bounds = asset.bounds;
-    if (canvas.width != w || canvas.height != h) {
+    /*if (canvas.width != w || canvas.height != h) {
         canvas.width = w;
         canvas.height = h;
-    }
+    }*/
 
+    let isSd = bounds.size.x < 400 && bounds.size.y < 600;
+    if (isSd) {
+        canvas.width = 400
+        canvas.height = 600
+    } else {
+        canvas.width = bounds.size.x + 40
+        canvas.height = bounds.size.y + 40
+    }
+    
     // magic
     var centerX = bounds.offset.x + bounds.size.x / 2;
     var centerY = bounds.offset.y + bounds.size.y / 2;
-    var scaleX = bounds.size.x / canvas.width;
-    var scaleY = bounds.size.y / canvas.height;
-    var scale = Math.max(scaleX, scaleY) * 1.2;
-    if (scale < 1) scale = 1;
+
+    if (isSd) {
+        centerY += 40
+    }
+    // var scaleX = bounds.size.x / canvas.width;
+    // var scaleY = bounds.size.y / canvas.height;
+    var scale = /* Math.max(scaleX, scaleY) * 1.2;
+    if (scale < 1)*/ scale = 1;
     var width = canvas.width * scale;
     var height = canvas.height * scale;
 
@@ -421,8 +458,10 @@ function Resize() {
 }
 
 let spines = {}
+let directoryHandle;
 async function SelectDirectory() {
-    let directoryHandle = await window.showDirectoryPicker();
+    directoryHandle = await window.showDirectoryPicker({ id: "spineViewer-open", mode: "readwrite" });
+    spines = {};
     for await (const [name, handle] of directoryHandle.entries()) {
         if (handle.kind === "directory") {
             var json = null, atlas = null, spriteSheet = null;
@@ -478,6 +517,79 @@ function SetupIdolList() {
         pathTexture = window.URL.createObjectURL(await selected.texture.getFile());
         requestAnimationFrame(LoadAsset);
     };
+}
+
+const delay = ms => new Promise(res => setTimeout(res, ms));
+
+async function getFrameAsBlob(mimeType = "image/png", quality = 1) {
+    return new Promise((success) => {
+        requestAnimationFrame(function() {
+            canvas.toBlob(blob => success(blob), mimeType, quality)
+        })
+    })
+}
+
+async function getFrameAsDataUrl(mimeType = "image/png", quality = 1) {
+    return new Promise((success) => {
+        requestAnimationFrame(function() {
+            success(canvas.toDataURL(mimeType, quality));
+        })
+    })
+}
+
+async function ExportFiles() {
+    const idolList = $("#idolList")[0];
+    const status = $("#status")[0];
+    const animationList = $("#animationList")[0];
+
+    for (let i = 1; i < idolList.childElementCount; i++) {
+        status.textContent = `${i} / ${idolList.childElementCount - 1}`
+        idolList.selectedIndex = i;
+        let name = idolList.childNodes[i].value
+        await idolList.onchange();
+        await delay(300);
+        let options = [...animationList.options].filter(x => x.value == "off" || x.value == "on");
+        let j = -1;
+        do {
+            let option = options[j];
+            if (option) {option.selected = true; animationList.onchange();}
+            let blob = await getFrameAsBlob();
+            let fileHandle = await directoryHandle.getFileHandle(`${name}${option?.value ? "_" + option.value : ""}.png`, {create: true})
+            let file = await fileHandle.createWritable();
+            await file.write(blob);
+            await file.close()
+        } while (options[++j]);
+    }
+}
+
+async function DownloadAsFile() {
+    const idolList = $("#idolList")[0];
+    let fileName = idolList.selectedOptions?.[0]?.value || "canvas"
+    let dataUrl = await getFrameAsDataUrl();
+    const a = document.createElement("a");
+    a.href = dataUrl;
+    a.download = `${fileName}.png`
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+}
+
+async function ExportFrames() {
+    const status = $("#status")[0];
+    const saveFolderHandle = await window.showDirectoryPicker({ id: "spineViewer-exportFrames", mode: "readwrite" });
+    status.textContent = "Rendering"
+    await LoadAssetAndStartRecording();
+    
+    for (let i = 0; i < recordFrames.length; i++)
+    {
+        status.textContent = `${i + 1} / ${recordFrames.length}`
+        let fileHandle = await saveFolderHandle.getFileHandle(`${i}.webp`, {create: true})
+        let file = await fileHandle.createWritable();
+        let frame = recordFrames[i];
+        await file.write(frame);
+        await file.close()
+    }
+    status.textContent = "Complete"
 }
 
 Init();
