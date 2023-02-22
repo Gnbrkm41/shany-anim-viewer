@@ -30,6 +30,7 @@ div {
 div span {
     color: #fff;
     padding: 4px;
+    display: inline-block;
 }
 
 select, input, button {
@@ -52,4 +53,8 @@ select {
     float: left;
     margin-right: 30%;
     width: 20%;
+}
+
+input[type="number"] {
+    width: 60px;
 }

@@ -25,6 +25,13 @@ let recordFrames = [];
 let completePromiseHandler;
 const dataURL = ".";
 
+let sdConfigs = {
+    "width": 300,
+    "height": 400,
+    "offsetX": 0,
+    "offsetY": 70,
+}
+
 const $ = document.querySelectorAll.bind(document);
 
 async function Init() {
@@ -438,8 +445,8 @@ function Resize() {
 
     let isSd = bounds.size.x < 400 && bounds.size.y < 600;
     if (isSd) {
-        canvas.width = 300
-        canvas.height = 450
+        canvas.width = sdConfigs.width
+        canvas.height = sdConfigs.height
     } else {
         canvas.width = bounds.size.x + 40
         canvas.height = bounds.size.y + 40
@@ -450,7 +457,9 @@ function Resize() {
     var centerY = bounds.offset.y + bounds.size.y / 2;
 
     if (isSd) {
-        centerY *= 1.25
+        centerY += sdConfigs.offsetY
+        centerX += sdConfigs.offsetX
+        
     }
     var scaleX = bounds.size.x / canvas.width;
     var scaleY = bounds.size.y / canvas.height;
@@ -595,6 +604,14 @@ async function ExportFrames() {
         await file.close()
     }
     status.textContent = "Complete"
+}
+
+function UpdateConfigs() {
+    frameRate = Number($("#fps")[0].value);
+    sdConfigs.width = Number($("#width")[0].value);
+    sdConfigs.height = Number($("#height")[0].value);
+    sdConfigs.offsetX = Number($("#offsetX")[0].value);
+    sdConfigs.offsetY = Number($("#offsetY")[0].value);
 }
 
 Init();

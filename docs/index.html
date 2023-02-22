@@ -32,7 +32,19 @@
             <button onclick="ExportFiles();">Export All Spines</button>
             <button onclick="DownloadAsFile()">Download Current Frame</button>
             <button onclick="ExportFrames()">Export All Frames</button>
+            <span>FPS:</span><input id="fps" type="number" value="30" onchange="UpdateConfigs()"/>
+            <br>
             <span>Status:</span><span id="status">Ready</span>
+            <br>
+            <span>SD Configs</span>
+            <br>
+            <span>Width:</span><input id="width" type="number" value="300" onchange="UpdateConfigs()"/>
+            <br>
+            <span>Height:</span><input id="height" type="number" value="450" onchange="UpdateConfigs()"/>
+            <br>
+            <span>X offset:</span><input id="offsetX" type="number" value="0" onchange="UpdateConfigs()"/>
+            <br>
+            <span>Y offset:</span><input id="offsetY" type="number" value="70" onchange="UpdateConfigs()"/>
         </div>
         <canvas id="canvas"></canvas>
         <script src="main.js"></script>
