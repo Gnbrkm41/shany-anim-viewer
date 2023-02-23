@@ -612,7 +612,7 @@ function UpdateConfigs() {
     sdConfigs.height = Number($("#height")[0].value);
     sdConfigs.offsetX = Number($("#offsetX")[0].value);
     sdConfigs.offsetY = Number($("#offsetY")[0].value);
-    exportQuality = Number($("#offsetY")[0].value) / 100.0
+    exportQuality = Number($("#quality")[0].value) / 100.0
 }
 
 Init();
