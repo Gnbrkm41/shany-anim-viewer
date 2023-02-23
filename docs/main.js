@@ -26,10 +26,10 @@ let completePromiseHandler;
 const dataURL = ".";
 
 let sdConfigs = {
-    "width": 300,
-    "height": 450,
+    "width": 0,
+    "height": 0,
     "offsetX": 0,
-    "offsetY": 70,
+    "offsetY": 0,
 }
 let exportQuality = 90
 
@@ -446,22 +446,20 @@ function Resize() {
 
     let isSd = bounds.size.x < 400 && bounds.size.y < 600;
     if (isSd) {
-        canvas.width = sdConfigs.width
-        canvas.height = sdConfigs.height
+        canvas.width = 300 + sdConfigs.width
+        canvas.height = 450 + sdConfigs.height
     } else {
-        canvas.width = bounds.size.x + 40
-        canvas.height = bounds.size.y + 40
+        canvas.width = bounds.size.x + 40 + sdConfigs.width
+        canvas.height = bounds.size.y + 40 + sdConfigs.height
     }
     
     // magic
     var centerX = bounds.offset.x + bounds.size.x / 2;
     var centerY = bounds.offset.y + bounds.size.y / 2;
 
-    if (isSd) {
-        centerY += sdConfigs.offsetY
-        centerX += sdConfigs.offsetX
-        
-    }
+    centerY += sdConfigs.offsetY
+    centerX += sdConfigs.offsetX
+
     var scaleX = bounds.size.x / canvas.width;
     var scaleY = bounds.size.y / canvas.height;
     var scale = isSd ? Math.max(scaleX, scaleY) * 1.2 : 1;
@@ -563,7 +561,7 @@ async function ExportFiles() {
         let name = idolList.childNodes[i].value
         await idolList.onchange();
         await delay(300);
-        let options = [...animationList.options].filter(x => x.value == "off" || x.value == "on");
+        let options = [...animationList.options].filter(x => x.value.includes("off")|| x.value.includes(on));
         let j = -1;
         do {
             let option = options[j];
