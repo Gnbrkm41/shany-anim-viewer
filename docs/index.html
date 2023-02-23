@@ -32,9 +32,13 @@
             <button onclick="ExportFiles();">Export All Spines</button>
             <button onclick="DownloadAsFile()">Download Current Frame</button>
             <button onclick="ExportFrames()">Export All Frames</button>
-            <span>FPS:</span><input id="fps" type="number" value="30" onchange="UpdateConfigs()"/>
-            <br>
             <span>Status:</span><span id="status">Ready</span>
+            <br>
+            <span>Export Configs</span>
+            <br>
+            <span>FPS:</span><input id="fps" type="number" value="30" onchange="UpdateConfigs()"/>
+            <span>Quality:</span><input id="quality" type="number" value="90" min="1" max="100" onchange="UpdateConfigs()"/>
+            <br>
             <br>
             <span>SD Configs</span>
             <br>

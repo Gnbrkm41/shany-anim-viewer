@@ -31,6 +31,7 @@ let sdConfigs = {
     "offsetX": 0,
     "offsetY": 70,
 }
+let exportQuality = 90
 
 const $ = document.querySelectorAll.bind(document);
 
@@ -424,7 +425,7 @@ function Render() {
     shader.unbind();
 
     if (isRecording) {       
-        let frame = canvas.toBlob((blob) => recordFrames.push(blob), "image/webp", 0.8)
+        canvas.toBlob((blob) => recordFrames.push(blob), "image/webp", exportQuality)
 
         if (state.tracks[0].isComplete()) {
             isRecording = false;
@@ -566,7 +567,7 @@ async function ExportFiles() {
         let j = -1;
         do {
             let option = options[j];
-            if (option) {option.selected = true; animationList.onchange();}
+            if (option) {option.selected = true; animationList.onchange(); await delay(500)}
             let blob = await getFrameAsBlob();
             let fileHandle = await directoryHandle.getFileHandle(`${name}${option?.value ? "_" + option.value : ""}.png`, {create: true})
             let file = await fileHandle.createWritable();
@@ -604,6 +605,7 @@ async function ExportFrames() {
         await file.close()
     }
     status.textContent = "Complete"
+    recordFrames = [];
 }
 
 function UpdateConfigs() {
@@ -612,6 +614,7 @@ function UpdateConfigs() {
     sdConfigs.height = Number($("#height")[0].value);
     sdConfigs.offsetX = Number($("#offsetX")[0].value);
     sdConfigs.offsetY = Number($("#offsetY")[0].value);
+    exportQuality = Number($("#offsetY")[0].value) / 100.0
 }
 
 Init();
