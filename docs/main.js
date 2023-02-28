@@ -561,7 +561,7 @@ async function ExportFiles() {
         let name = idolList.childNodes[i].value
         await idolList.onchange();
         await delay(300);
-        let options = [...animationList.options].filter(x => x.value.includes("off")|| x.value.includes(on));
+        let options = [...animationList.options].filter(x => x.value.includes("off")|| x.value.includes("on"));
         let j = -1;
         do {
             let option = options[j];
