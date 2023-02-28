@@ -561,7 +561,18 @@ async function ExportFiles() {
         let name = idolList.childNodes[i].value
         await idolList.onchange();
         await delay(300);
-        let options = [...animationList.options].filter(x => x.value.includes("off")|| x.value.includes("on"));
+        let options = [...animationList.options]
+        .filter(x => {
+            let val = x.value;
+            if (val == "on" || val == "off") {
+                return true;
+            }
+            let split = val.split("_");
+            if (split[0] == "eye") {
+                return false;
+            }
+            return split.find(x => x == "on" || x == "off");
+        });
         let j = -1;
         do {
             let option = options[j];
